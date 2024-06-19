@@ -9,6 +9,8 @@ from mix_utils import normalize
 import pandas as pd
 import soundfile as sf
 import pygame
+import pickle
+import time
 
 FEATURES_FILE_PATH = 'data/features2.csv'
 MODEL_PATH = "models/musicnet.ts"
@@ -29,6 +31,12 @@ def main():
     # Normalize the arousal and valence values and combine them into a single array
     arousal, valence = normalize(arousal, valence)
     data = np.column_stack((arousal, valence))
+    
+    with open('encodings.pkl', 'rb') as f:
+        encodings = pickle.load(f)
+
+    # Associate the names with the encodings
+    encodings = dict(zip(names, encodings))
 
     while True:
         # Ask the user for input
@@ -40,6 +48,7 @@ def main():
         if user_input.lower() == 'exit':
             break
 
+        start_time = time.time()
         # Parse the user input
         valence_coordinate, arousal_coordinate, neighbors = user_input.split(' ')
         valence_coordinate = float(valence_coordinate)
@@ -57,20 +66,18 @@ def main():
         # Get the names of the k nearest neighbors
         nearest_neighbors = names[indices]
 
-        print(nearest_neighbors[0])    
+        print("Nearest neighbours", nearest_neighbors[0])    
 
-        # Load the audio files
-        audio_data = [li.load(audiofile, sr=22050)[0] for audiofile in nearest_neighbors[0]]
+        # Load the audio file embeddings
+        latent_data = []
+        for name in nearest_neighbors[0]:
+            latent_data.append(encodings[name])
 
-        # Cut the audio to 10 seconds
-        cut_audio_data = [audio[:22050 * 10] for audio in audio_data]
-
-        # # Encode the audio
-        latent_data = [model.encode(torch.from_numpy(cut_audio).reshape(1,1,-1)) for cut_audio in cut_audio_data]
         merged_latent = sum(latent_data)/neighbors
-        # merged_latent = np.mean(latent_data, axis=0)
         merged_audio = model.decode(merged_latent).numpy().reshape(-1)
 
+        end_time = time.time()
+        print("Time taken: ", end_time - start_time)
         # Write the audio data to a .wav file
         sf.write('output.wav', merged_audio, 22050)
 
