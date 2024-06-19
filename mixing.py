@@ -66,16 +66,9 @@ def main():
         cut_audio_data = [audio[:22050 * 10] for audio in audio_data]
 
         # # Encode the audio
-        # latent_data = [model.encode(torch.from_numpy(cut_audio).reshape(1,1,-1)) for cut_audio in cut_audio_data]
+        latent_data = [model.encode(torch.from_numpy(cut_audio).reshape(1,1,-1)) for cut_audio in cut_audio_data]
+        merged_latent = sum(latent_data)/neighbors
         # merged_latent = np.mean(latent_data, axis=0)
-        # merged_audio = model.decode(merged_latent).numpy().reshape(-1)
-
-        latent_data = []
-
-        for cut_audio in cut_audio_data:
-            latent_data.append(model.encode(torch.from_numpy(cut_audio).reshape(1,1,-1)))
-
-        merged_latent=sum(latent_data)/neighbors
         merged_audio = model.decode(merged_latent).numpy().reshape(-1)
 
         # Write the audio data to a .wav file
