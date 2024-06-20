@@ -12,6 +12,9 @@ from mix_utils import normalize
 import pandas as pd
 import pickle
 
+import soundfile as sf
+import pygame
+
 FEATURES_FILE_PATH = 'data/features2.csv'
 MODEL_PATH = "models/musicnet.ts"
 
@@ -64,18 +67,39 @@ def process_parameters(unused_addr, *args):
     # Merge the latent data using the average of the nearest neighbors, and distance weighting (soon)
     merged_latent = sum(latent_data) / neighbors
     merged_audio = model.decode(merged_latent).detach().numpy().reshape(-1)
-    merged_audio = merged_audio.tolist() 
+    # merged_audio = merged_audio.tolist() 
 
-    # # Send audio data back to Max/MSP in chunks of 1024 samples
-    for i in range(0, len(merged_audio), 1024):
-        client.send_message("/audio", merged_audio[i:i+1024])
+    ## Code to play audio in Python
+    # Normalize audio
+    merged_audio = merged_audio/np.max(merged_audio)
 
-ip = "localhost"
+    # Write the audio data to a .wav file
+    sf.write('output.wav', merged_audio, 44100)
+
+    # Initialize pygame mixer
+    pygame.mixer.init()
+
+    # Load the .wav file
+    pygame.mixer.music.load('output.wav')
+
+    # Play the audio
+    pygame.mixer.music.play()
+
+    # Keep the script running until the audio has finished playing
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(10)
+
+    # # # Send audio data back to Max/MSP in chunks of 1024 samples
+    # for i in range(0, len(merged_audio), 1024):
+    #     client.send_message("/audio", merged_audio[i:i+1024])
+    
+
+ip = "172.31.50.104"
 receiveport = 10001
 sendport = 10000
 
 # Audio client (send)
-client = udp_client.SimpleUDPClient("127.0.0.1", sendport)
+client = udp_client.SimpleUDPClient(ip, sendport)
 
 # Send a simple test message to ensure communication works
 float_value = 51.42
@@ -87,7 +111,7 @@ dispatcher = dispatcher.Dispatcher()
 dispatcher.map("/parameters", process_parameters)
 
 # Server to receive OSC messages
-server = osc_server.ThreadingOSCUDPServer(("localhost", receiveport), dispatcher)
+server = osc_server.ThreadingOSCUDPServer((ip, receiveport), dispatcher)
 
 # Start OSC server in a separate thread
 server_thread = threading.Thread(target=server.serve_forever)
