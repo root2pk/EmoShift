@@ -66,15 +66,16 @@ def process_parameters(unused_addr, *args):
     merged_audio = model.decode(merged_latent).detach().numpy().reshape(-1)
     merged_audio = merged_audio.tolist() 
 
-    # # Send audio data back to Max/MSP
-    # print("Sending audio data to Max/MSP...")
-    client.send_message("/audio", merged_audio[0:2])
+    # # Send audio data back to Max/MSP in chunks of 1024 samples
+    for i in range(0, len(merged_audio), 1024):
+        client.send_message("/audio", merged_audio[i:i+1024])
 
 ip = "localhost"
 receiveport = 10001
+sendport = 10000
 
 # Audio client (send)
-client = udp_client.SimpleUDPClient("127.0.0.1", 10000)
+client = udp_client.SimpleUDPClient("127.0.0.1", sendport)
 
 # Send a simple test message to ensure communication works
 float_value = 51.42
