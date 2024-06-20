@@ -63,12 +63,11 @@ def process_parameters(unused_addr, *args):
 
     # Merge the latent data using the average of the nearest neighbors, and distance weighting (soon)
     merged_latent = sum(latent_data) / neighbors
-    merged_audio = model.decode(merged_latent).detach().numpy().reshape(-1)
-    merged_audio = merged_audio.tolist() 
+    merged_latent = np.average(merged_latent, axis = 2).reshape(-1)
+    merged_latent = merged_latent.tolist()
 
-    # # Send audio data back to Max/MSP in chunks of 1024 samples
-    for i in range(0, len(merged_audio), 1024):
-        client.send_message("/audio", merged_audio[i:i+1024])
+    # Send back latent variables to Max
+    client.send_message("/audio", merged_latent)
 
 ip = "localhost"
 receiveport = 10001
