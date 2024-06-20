@@ -12,11 +12,19 @@ import pandas as pd
 import pickle
 import time
 
+import sounddevice as sd
+import pygame
+import soundfile as sf
+
 FEATURES_FILE_PATH = 'data/features2.csv'
 MODEL_PATH = "models/musicnet.ts"
 
 # Load the model
 model = torch.jit.load(MODEL_PATH).eval()
+
+# Audio playback parameters
+bufferpos = 0
+sd.default.samplerate = 44100
 
 # Read features file path
 df = pd.read_csv(FEATURES_FILE_PATH, header=None)
@@ -36,7 +44,7 @@ encodings = dict(zip(names, encodings))
 
 # Function to process incoming OSC messages
 def process_parameters(unused_addr, *args):
-    counter = 0
+
     if len(args) == 3:
         valence_coordinate = float(args[0])
         arousal_coordinate = float(args[1])
@@ -52,10 +60,8 @@ def process_parameters(unused_addr, *args):
     nn.set_params(n_neighbors=neighbors)
 
     # Find the k nearest neighbors
-    _, indices = nn.kneighbors(point)
+    distances, indices = nn.kneighbors(point)
     nearest_neighbors = names[indices]
-    counter = counter + 1
-    print("Counter = ", counter)
     print(nearest_neighbors[0])
 
     # Load the audio file embeddings
@@ -66,16 +72,33 @@ def process_parameters(unused_addr, *args):
     merged_latent = sum(latent_data) / neighbors
     merged_audio = model.decode(merged_latent).detach().numpy().reshape(-1)
 
-    print(merged_audio)
+    # Play audio here for now
+    while bufferpos < 706560:
+        start_pos = bufferpos
+        end_pos = bufferpos + 88200
+        sd.play(merged_audio[start_pos:end_pos])
 
+    # # Write the audio data to a .wav file
+    # sf.write('output.wav', merged_audio, 44100)
+
+    # # Initialize pygame mixer
+    # pygame.mixer.init()
+
+    # # Load the .wav file
+    # pygame.mixer.music.load('output.wav')
+
+    # # Play the audio
+    # pygame.mixer.music.play()
+
+    # # Keep the script running until the audio has finished playing
+    # while pygame.mixer.music.get_busy():
+    #     pygame.time.Clock().tick(10)
     # Send audio data back to Max/MSP
     # audio_client.send_message("/audio", merged_audio.tolist())
-    # audio_client.send_message("/audio", 5)
 
 # Audio client
 audio_client = udp_client.SimpleUDPClient("172.31.50.104", 9001)
-print("We're here")
-audio_client.send_message("/audio", "Hello")
+audio_client.send_message("/float", 50.3)
 
 # Setup OSC server and client
 dispatcher = dispatcher.Dispatcher()
