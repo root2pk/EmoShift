@@ -79,7 +79,7 @@ def main():
         end_time = time.time()
         print("Time taken: ", end_time - start_time)
         # Write the audio data to a .wav file
-        sf.write('output.wav', merged_audio, 22050)
+        sf.write('output.wav', merged_audio, 44100)
 
         # Initialize pygame mixer
         pygame.mixer.init()
