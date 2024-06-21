@@ -55,22 +55,22 @@ def process_parameters(unused_addr, *args):
     distances, indices = nn.kneighbors(point)
     weights = 1 / (distances[0] + 1e-6)
     weights /= weights.sum()
-    nearest_neighbors = names[indices][0]
+    nearest_neighbors = names[indices[0]]
 
-    # Load the audio file embeddings
-    latent_data = []
-    for name in nearest_neighbors:
-        latent_data.append(encodings[name])
+    # Load and weight the audio file embeddings
+    latent_data = [weights[i] * encodings[name] for i, name in enumerate(nearest_neighbors)]
 
-    # Multiply the latent data by the weights
-    for i in range(len(latent_data)):
-        latent_data[i] = weights[i] * latent_data[i]
+    # Sum the weighted latent data
+    merged_latent = np.sum(latent_data, axis=0)
 
-    # Average the latent data
-    merged_latent = sum(latent_data)/len(latent_data)
-    merged_latent = np.average(merged_latent, axis = 2).reshape(-1)
-    merged_latent = merged_latent.tolist()
-    print(merged_latent)
+    # Average over the first axis to get shape [1, 16, 345]
+    merged_latent = np.mean(merged_latent, axis=0, keepdims=True)
+
+    # Further average over the temporal axis (axis 2) to get shape [1, 16]
+    merged_latent = np.mean(merged_latent, axis=2)
+
+    # Flatten the result and convert to list
+    merged_latent = merged_latent.flatten().tolist()
 
     # Send back 16 latent variables to Max
     client.send_message("/audio", merged_latent)
