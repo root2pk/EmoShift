@@ -25,6 +25,10 @@ pip install -r requirements.txt
 * `scikit-learn`
 * `torch`
 * `python-osc`
+  
+## Dataset
+
+This model makes use of the [MusicNet dataset](https://www.kaggle.com/datasets/imsparsh/musicnet-dataset) that contains 330 freely licensed classical music songs.
 
 ## Models
 
@@ -45,7 +49,7 @@ This model uses the pretrained RAVE VAE model that is trained on the MusicNet da
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the GNU General Public License v3.0 - see the LICENSE file for details.
 
 ## Acknowledgments
 
