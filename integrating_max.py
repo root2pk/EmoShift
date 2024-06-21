@@ -66,12 +66,11 @@ def process_parameters(unused_addr, *args):
 
     # Merge the latent data using the average of the nearest neighbors, and distance weighting (soon)
     merged_latent = sum(latent_data) / neighbors
-    merged_audio = model.decode(merged_latent).detach().numpy().reshape(-1)
-    # merged_audio = merged_audio.tolist() 
+    merged_latent = np.average(merged_latent, axis = 2).reshape(-1)
+    merged_latent = merged_latent.tolist()
 
-    ## Code to play audio in Python
-    # Normalize audio
-    merged_audio = merged_audio/np.max(merged_audio)
+    # Send back latent variables to Max
+    client.send_message("/audio", merged_latent)
 
     # Write the audio data to a .wav file
     sf.write('output.wav', merged_audio, 44100)
