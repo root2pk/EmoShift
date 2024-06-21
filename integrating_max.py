@@ -12,7 +12,7 @@ from mix_utils import normalize
 import pandas as pd
 import pickle
 
-FEATURES_FILE_PATH = 'data/features2.csv'
+FEATURES_FILE_PATH = 'data/features_16s.csv'
 MODEL_PATH = "models/musicnet.ts"
 
 # Load the model
@@ -53,24 +53,31 @@ def process_parameters(unused_addr, *args):
 
     # Find the k nearest neighbors
     distances, indices = nn.kneighbors(point)
-    nearest_neighbors = names[indices]
-    print(nearest_neighbors[0])
+    weights = 1 / (distances[0] + 1e-6)
+    weights /= weights.sum()
+    nearest_neighbors = names[indices][0]
 
     # Load the audio file embeddings
     latent_data = []
-    for name in nearest_neighbors[0]:
+    for name in nearest_neighbors:
         latent_data.append(encodings[name])
 
-    # Merge the latent data using the average of the nearest neighbors, and distance weighting (soon)
-    merged_latent = sum(latent_data) / neighbors
+    # Multiply the latent data by the weights
+    for i in range(len(latent_data)):
+        latent_data[i] = weights[i] * latent_data[i]
+
+    # Average the latent data
+    merged_latent = sum(latent_data)/len(latent_data)
     merged_latent = np.average(merged_latent, axis = 2).reshape(-1)
     merged_latent = merged_latent.tolist()
+    print(merged_latent)
 
     # Send back 16 latent variables to Max
     client.send_message("/audio", merged_latent)
     
 
-ip = "127.0.0.1"
+ip = "127.0.0.1"                # localhost
+# ip = "172.31.50.104"              # WSL2 localhost
 receiveport = 10001
 sendport = 10000
 
