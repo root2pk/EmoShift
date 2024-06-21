@@ -12,9 +12,6 @@ from mix_utils import normalize
 import pandas as pd
 import pickle
 
-import soundfile as sf
-import pygame
-
 FEATURES_FILE_PATH = 'data/features2.csv'
 MODEL_PATH = "models/musicnet.ts"
 
@@ -69,31 +66,11 @@ def process_parameters(unused_addr, *args):
     merged_latent = np.average(merged_latent, axis = 2).reshape(-1)
     merged_latent = merged_latent.tolist()
 
-    # Send back latent variables to Max
+    # Send back 16 latent variables to Max
     client.send_message("/audio", merged_latent)
-
-    # Write the audio data to a .wav file
-    sf.write('output.wav', merged_audio, 44100)
-
-    # Initialize pygame mixer
-    pygame.mixer.init()
-
-    # Load the .wav file
-    pygame.mixer.music.load('output.wav')
-
-    # Play the audio
-    pygame.mixer.music.play()
-
-    # Keep the script running until the audio has finished playing
-    while pygame.mixer.music.get_busy():
-        pygame.time.Clock().tick(10)
-
-    # # # Send audio data back to Max/MSP in chunks of 1024 samples
-    # for i in range(0, len(merged_audio), 1024):
-    #     client.send_message("/audio", merged_audio[i:i+1024])
     
 
-ip = "172.31.50.104"
+ip = "127.0.0.1"
 receiveport = 10001
 sendport = 10000
 
