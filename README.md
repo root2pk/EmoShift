@@ -6,11 +6,15 @@ EmoShift allows you to explore the emotion space (valence-arousal plane) and ble
 
 ## Installation
 
-To install the required dependencies, run:
+To install the required dependencies in Python, run:
 
 ```sh
 pip install -r requirements.txt
 ```
+
+To install the required dependencies for Max MSP:
+
+1. Install [nn~](https://github.com/acids-ircam/nn_tilde) from IRCAM.
 
 ## Usage instructions
 
@@ -47,6 +51,9 @@ This model uses the pretrained RAVE VAE model that is trained on the MusicNet da
 
 [Link to GitHub](https://github.com/acids-ircam/RAVE)
 
+## Run your own dataset and models
+
+To run your own dataset and models, load the required dataset into the audio folder and run `precompute_VA.py` and `precompute_embeddings.py` with the correct directories specified.
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the LICENSE file for details.

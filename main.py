@@ -5,7 +5,6 @@ import torch
 torch.set_grad_enabled(False)
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-from mix_utils import normalize
 import pandas as pd
 import pickle
 
@@ -13,28 +12,19 @@ import pickle
 FEATURES_FILE_PATH = 'data/features_16s.csv'
 MODEL_PATH = "models/musicnet.ts"
 
-################# Backend setup #################
-# Load the model
-model = torch.jit.load(MODEL_PATH).eval()
+################# Functions #################
 
-# Read features file path
-df = pd.read_csv(FEATURES_FILE_PATH, header=None)
-names = df.iloc[:, 0].to_numpy()
-arousal = df.iloc[:, 3].to_numpy()
-valence = df.iloc[:, 4].to_numpy()
-
-# Normalize the arousal and valence values and combine them into a single array
-arousal, valence = normalize(arousal, valence)
-data = np.column_stack((arousal, valence))
-
-with open('encodings.pkl', 'rb') as f:
-    encodings = pickle.load(f)
-
-# Associate the names with the encodings
-encodings = dict(zip(names, encodings))
-
-# Function to process incoming OSC messages
 def process_parameters(unused_addr, *args):
+    """
+    Function that processes incoming OSC messages and sends back the latent variables to Max
+
+    Parameters:
+    unused_addr (str): The OSC address
+    *args (list): A list of arguments received from Max
+
+    Returns:
+    None
+    """
 
     if len(args) == 3:
         valence_coordinate = float(args[0])
@@ -73,7 +63,47 @@ def process_parameters(unused_addr, *args):
 
     # Send back 16 latent variables to Max
     client.send_message("/audio", merged_latent)
+
+def normalize(arousal, valence):
+    """
+    Function that takes in an array of arousal and valence values and normalizes them to 0 to 1
+
+    Parameters:
+    arousal (np.array): An array of arousal values
+    valence (np.array): An array of valence values
+
+    Returns:
+    arousal_norm (np.array): The normalized arousal values
+    valence_norm (np.array): The normalized valence values
+
+    """
     
+    arousal_norm = (arousal - arousal.min()) / (arousal.max() - arousal.min())
+    valence_norm = (valence - valence.min()) / (valence.max() - valence.min())
+
+    return arousal_norm, valence_norm   
+ 
+################# Backend setup #################
+
+# Load the model
+model = torch.jit.load(MODEL_PATH).eval()
+
+# Read features file path
+df = pd.read_csv(FEATURES_FILE_PATH, header=None)
+names = df.iloc[:, 0].to_numpy()
+arousal = df.iloc[:, 3].to_numpy()
+valence = df.iloc[:, 4].to_numpy()
+
+# Normalize the arousal and valence values and combine them into a single array
+arousal, valence = normalize(arousal, valence)
+data = np.column_stack((arousal, valence))
+
+with open('encodings.pkl', 'rb') as f:
+    encodings = pickle.load(f)
+
+# Associate the names with the encodings
+encodings = dict(zip(names, encodings))
+
 ################# Server setup #################
 
 ip = "127.0.0.1"                # Mac and windows localhost

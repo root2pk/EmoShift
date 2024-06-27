@@ -1,15 +1,20 @@
+"""
+Script to precompute the embeddings of the audio files in the MusicNet dataset.
+
+The embeddings are computed using the pre-trained model in `models/musicnet.ts`.
+
+The embeddings are saved to a pickle file `encodings.pkl`.
+
+"""
+
 import librosa as li
 import torch
 torch.set_grad_enabled(False)
-from mix_utils import normalize
-import numpy as np
-import matplotlib.pyplot as plt
 
 import pandas as pd
 import pickle
 from tqdm import tqdm
 
-AUDIO_DIR = 'audio2/'
 MODEL_PATH = 'models/musicnet.ts'
 FEATURES_FILE_PATH = 'data/features_16s.csv'
 
@@ -21,13 +26,7 @@ df = pd.read_csv(FEATURES_FILE_PATH, header=None)
 
 # Extract the audiofile names
 names = df.iloc[:, 0].to_numpy()
-arousal = df.iloc[:, 3].to_numpy()
-valence = df.iloc[:, 4].to_numpy()
-
-# Normalize the arousal and valence values and combine them into a single array
-arousal, valence = normalize(arousal, valence)
-data = np.column_stack((arousal, valence))
-print(len(names))
+print("Number of audio files: ", len(names))
 
 # Extract the encodings
 encodings = []
