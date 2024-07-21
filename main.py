@@ -10,7 +10,6 @@ import pickle
 
 # File paths
 FEATURES_FILE_PATH = 'data/features_16s.csv'
-MODEL_PATH = "models/musicnet.ts"
 
 ################# Functions #################
 
@@ -46,17 +45,15 @@ def process_parameters(unused_addr, *args):
     weights /= weights.sum()
     nearest_neighbors = names[indices[0]]
 
-    # Load and weight the audio file embeddings
-    latent_data = [weights[i] * encodings[name] for i, name in enumerate(nearest_neighbors)]
+    # Get the latent data for the nearest neighbors shape of each tensor: (1, 16, 345)
+    latent_data = [encodings[name] for name in nearest_neighbors]
 
-    # Sum the weighted latent data
-    merged_latent = np.sum(latent_data, axis=0)
-
-    # Average over the first axis to get shape [1, 16, 345]
-    merged_latent = np.mean(merged_latent, axis=0, keepdims=True)
-
-    # Further average over the temporal axis (axis 2) to get shape [1, 16]
-    merged_latent = np.mean(merged_latent, axis=2)
+    # Merge the latent data using the weights, to shape (1, 16)
+    merged_latent = torch.zeros(1, 16)
+    for i, tens in enumerate(latent_data):
+        weight = weights[i]
+        tens = torch.mean(tens, dim = 2, keepdim = False)
+        merged_latent += weight * tens
 
     # Flatten the result and convert to list
     merged_latent = merged_latent.flatten().tolist()
@@ -84,9 +81,6 @@ def normalize(arousal, valence):
     return arousal_norm, valence_norm   
  
 ################# Backend setup #################
-
-# Load the model
-model = torch.jit.load(MODEL_PATH).eval()
 
 # Read features file path
 df = pd.read_csv(FEATURES_FILE_PATH, header=None)
